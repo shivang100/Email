@@ -4,7 +4,7 @@ import { BiText } from 'react-icons/bi';
 
 export default function EmailEditor() {
   const [isMyEditorVisible, setMyEditorVisible] = useState(false);
-  const [dropPosition, setDropPosition] = useState({ x: null, y: null });
+  const [dropPositions, setDropPositions] = useState([]);
 
   const available_form_elements = [
     {
@@ -44,36 +44,23 @@ export default function EmailEditor() {
 
   const onDrop = (event, target) => {
     const id = event.dataTransfer.getData('id');
-
-    if (id === 'input_text') {
+    if (id === 'input_text' || id === 'input_file') {
       const updatedSelectedFormElements = [...selected_form_elements];
 
       available_form_elements.forEach((element) => {
         if (element.id === id) {
           const newElement = { ...element, target };
           updatedSelectedFormElements.push(newElement);
-          
+
           if (!element.target) {
             setSelectedFormElements([...updatedSelectedFormElements]);
-            setDropPosition({ x: event.clientX, y: event.clientY });
-          } 
+            setDropPositions((prevPositions) => [
+              ...prevPositions,
+              { x: event.clientX, y: event.clientY },
+            ]);
+          }
         }
       });
-      if (id === 'input_file') {
-        const updatedSelectedFormElements = [...selected_form_elements];
-  
-        available_form_elements.forEach((element) => {
-          if (element.id === id) {
-            const newElement = { ...element, target };
-            updatedSelectedFormElements.push(newElement);
-            
-            if (!element.target) {
-              setSelectedFormElements([...updatedSelectedFormElements]);
-              setDropPosition({ x: event.clientX, y: event.clientY });
-            } 
-          }
-        });
-      }
     }
   };
 
@@ -88,10 +75,32 @@ export default function EmailEditor() {
       {element.element}
     </div>
   ));
-
+  const handledelete = (index) => {
+    const updatedSelectedFormElements = [...selected_form_elements];
+    updatedSelectedFormElements.splice(index, 1);
+  
+    setSelectedFormElements(updatedSelectedFormElements);
+    setDropPositions((prevPositions) => prevPositions.filter((_, i) => i !== index));
+  };
+  
   const selectedFormElements = selected_form_elements.map((element, index) => (
-    <div className="single_element_holder" key={element.id}>
-      {element.element}
+    <div
+      className="single_element_holder"
+      key={element.id}
+      style={{ position: 'absolute', top: dropPositions[index]?.y, left: dropPositions[index]?.x }}
+    >
+      {element.id == 'input_text' ? (
+       <div  style={{cursor:'pointer',width:'20px'}} onClick={()=>handledelete(index)} ><BiText  /></div>
+      ) : (
+        element.id == 'input_file' && (
+          // div
+          <div>
+       <div  style={{cursor:'pointer',width:'20px'}} onClick={()=>handledelete(index)} ><BiText  /></div>
+
+          <input className="input_file" type="file" />
+</div>
+        )
+      )}
     </div>
   ));
 
@@ -122,14 +131,13 @@ export default function EmailEditor() {
           </div>
         </div>
       </div>
-      
-      {isMyEditorVisible && dropPosition.x && dropPosition.y && (
-        <div
-          style={{ position: 'absolute', top: dropPosition.y, left: dropPosition.x }}
-        >
-          <MyEditor />
-        </div>
-      )}
+
+      {isMyEditorVisible &&
+        dropPositions.map((position, index) => (
+          <div key={index} style={{margin:'6px', position: 'absolute',zIndex:19, top: position.y, left: position.x }}>
+           {selectedFormElements[index].key!="input_file" && <MyEditor />}
+          </div>
+        ))}
     </div>
-  );
+  ); 
 }
